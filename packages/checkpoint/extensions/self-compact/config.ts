@@ -193,6 +193,6 @@ export const FLAG_AT = 'compact-at';
 export const FLAG_BUFFER = 'compact-buffer';
 export const FLAG_PROMPT = 'compact-prompt';
 
-export const DEFAULT_SOFT_AT = '225k';
-export const DEFAULT_AT = '250k';
-export const DEFAULT_BUFFER = '20k';
+export const DEFAULT_SOFT_AT = '10%';
+export const DEFAULT_AT = '20%';
+export const DEFAULT_BUFFER = '10%';

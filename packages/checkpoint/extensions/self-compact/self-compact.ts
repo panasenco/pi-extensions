@@ -761,11 +761,10 @@ export default function (
     const last = readNotifyState(branch(ctx));
     const notifiedRank = last && last.cycle === cycle ? LEVEL_RANK[last.level] : 0;
     if (LEVEL_RANK[level] <= notifiedRank) return false; // already announced this level (or stronger)
-    persistNotify({ level, cycle });
-    // Hard enforcement is delivered through the tool_call gate; soft/warning are
-    // advisory model-facing messages. A direct jump to hard therefore emits no
-    // soft/warning cascade.
-    if (level === 'soft' || level === 'warning') deliverGuidance(ctx, level, tokens);
+    // Announce ownership moved to the `context` hook (§ below): it delivers the
+    // model message + human notice ONCE per level per cycle. This site stays
+    // read-only so the turn_end `crossed` continuation still dedupes against
+    // the same persisted state.
     return level === 'warning' || level === 'hard';
   }
 
@@ -1103,11 +1102,22 @@ export default function (
       return { messages };
     const level = currentLevel(tokens);
     if (level === 'none') return { messages };
+    // Fire ONCE per level per compaction cycle: the guidance is injected at the
+    // boundary crossing only, not re-attached to every subsequent request. The
+    // persisted notify state (shared with evaluateThresholds' crossed check)
+    // tracks what has been announced; a compaction cycle reset re-arms it.
+    const cycle = state?.completedCycles ?? 0;
+    const last = readNotifyState(branch(ctx));
+    const notifiedRank = last && last.cycle === cycle ? LEVEL_RANK[last.level] : 0;
+    if (LEVEL_RANK[level] <= notifiedRank) return { messages }; // already announced this cycle
     const values = guidanceValues(tokens)!;
     const content =
       level === 'hard'
         ? `Context usage is ${tokens} tokens, at or above the hard cutoff ${config.thresholds.hardTokens}. Call self_compact alone with the exact unfinished next action.`
         : renderGuidance(level, values);
+    persistNotify({ level, cycle });
+    // Humans see the crossing once too; ordinary UI notice, not a message.
+    if (level !== 'hard') deliverGuidance(ctx, level, tokens);
     return {
       messages: [
         ...messages,
