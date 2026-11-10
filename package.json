@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.ts",
-    "prepare": "pnpm build",
     "typecheck": "tsgo --noEmit",
     "lint": "oxlint .",
     "format": "oxfmt .",
@@ -17,6 +16,11 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm typecheck && pnpm build && changeset publish"
+  },
+  "pi": {
+    "extensions": [
+      "packages/checkpoint/extensions/self-compact/self-compact.ts"
+    ]
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
